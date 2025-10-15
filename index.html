@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Sorting Visualizer</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    text-align: center;
+    background: #f8f9fa;
+  }
+  h2 {
+    color: #222;
+    margin-bottom: 20px;
+  }
+  #array-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 10px;
+    margin: 30px auto 10px auto;
+    flex-wrap: wrap;
+    height: 200px;
+  }
+  .bar {
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px 6px 0 0;
+    font-weight: bold;
+    color: #333;
+  }
+  #index-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .index {
+    width: 40px;
+    text-align: center;
+    font-size: 13px;
+    color: #555;
+  }
+  .controls {
+    margin-bottom: 15px;
+  }
+  select, button, input[type=number], input[type=range] {
+    font-size: 15px;
+    padding: 6px 8px;
+    margin: 5px;
+    border-radius: 6px;
+    border: 1px solid #888;
+  }
+  pre {
+    background: #fff;
+    border: 1px solid #ccc;
+    text-align: left;
+    display: inline-block;
+    padding: 10px;
+    border-radius: 6px;
+    max-width: 500px;
+    white-space: pre-wrap;
+  }
+  .legend {
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .color-box {
+    display: inline-block;
+    width: 15px; height: 15px;
+    margin-right: 5px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+<h2>Sorting Visualizer</h2>
+
+<div class="controls">
+  <label>Algorithm:</label>
+  <select id="algo" onchange="showPseudocode()">
+    <option value="bubble">Bubble Sort</option>
+    <option value="selection">Selection Sort</option>
+    <option value="insertion">Insertion Sort</option>
+    <option value="merge">Merge Sort</option>
+    <option value="quick">Quick Sort</option>
+  </select>
+
+  <label>Size:</label>
+  <input type="number" id="size" min="5" max="20" value="8">
+
+  <label>Speed:</label>
+  <input type="range" id="speed" min="50" max="1000" value="300">
+
+  <button onclick="generateArray()">New Array</button>
+  <button onclick="startSort()">Start</button>
+</div>
+
+<div id="array-container"></div>
+<div id="index-container"></div>
+
+<pre id="pseudocode"></pre>
+
+<div class="legend">
+  <div><span class="color-box" style="background:skyblue"></span>Normal</div>
+  <div><span class="color-box" style="background:orange"></span>Comparing</div>
+  <div><span class="color-box" style="background:limegreen"></span>Swapping / Selected</div>
+  <div><span class="color-box" style="background:red"></span>Pivot (Quick Sort)</div>
+  <div><span class="color-box" style="background:purple"></span>Left / Right Partition (Merge Sort)</div>
+</div>
+
+<script>
+let array = [];
+let delay = 300;
+
+function generateArray() {
+  const size = Number(document.getElementById("size").value);
+  array = [];
+  for (let i = 0; i < size; i++) array.push(Math.floor(Math.random() * 90) + 10);
+  showArray();
+}
+
+function showArray(highlight=[], colors=[]) {
+  const container = document.getElementById("array-container");
+  const indexC = document.getElementById("index-container");
+  container.innerHTML = "";
+  indexC.innerHTML = "";
+  const maxVal = Math.max(...array);
+  for (let i = 0; i < array.length; i++) {
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    bar.style.height = (array[i] / maxVal * 150 + 30) + "px";
+    bar.innerText = array[i];
+    bar.style.background = colors[i] || "skyblue";
+    container.appendChild(bar);
+
+    const idx = document.createElement("div");
+    idx.className = "index";
+    idx.innerText = i;
+    indexC.appendChild(idx);
+  }
+}
+
+function sleep(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+document.getElementById("speed").addEventListener("input",()=>{
+  delay = Number(document.getElementById("speed").value);
+});
+
+// Sorting Algorithms
+async function bubbleSort(){
+  for(let i=0;i<array.length-1;i++){
+    for(let j=0;j<array.length-i-1;j++){
+      let color = Array(array.length).fill("skyblue");
+      color[j] = "orange"; color[j+1] = "orange";
+      showArray([],color); await sleep(delay);
+      if(array[j]>array[j+1]){
+        [array[j],array[j+1]]=[array[j+1],array[j]];
+        color[j]="limegreen"; color[j+1]="limegreen";
+        showArray([],color); await sleep(delay);
+      }
+    }
+  }
+  showArray();
+}
+
+async function selectionSort(){
+  for(let i=0;i<array.length-1;i++){
+    let min=i;
+    for(let j=i+1;j<array.length;j++){
+      let color = Array(array.length).fill("skyblue");
+      color[min]="red"; color[j]="orange";
+      showArray([],color); await sleep(delay);
+      if(array[j]<array[min]) min=j;
+    }
+    [array[i],array[min]]=[array[min],array[i]];
+    let color = Array(array.length).fill("skyblue");
+    color[i]="limegreen";
+    showArray([],color); await sleep(delay);
+  }
+  showArray();
+}
+
+async function insertionSort(){
+  for(let i=1;i<array.length;i++){
+    let key=array[i]; let j=i-1;
+    while(j>=0 && array[j]>key){
+      array[j+1]=array[j];
+      let color = Array(array.length).fill("skyblue");
+      color[j]="orange"; color[j+1]="limegreen";
+      showArray([],color); await sleep(delay);
+      j--;
+    }
+    array[j+1]=key;
+  }
+  showArray();
+}
+
+async function mergeSort(l=0,r=array.length-1){
+  if(l>=r) return;
+  const m=Math.floor((l+r)/2);
+  await mergeSort(l,m);
+  await mergeSort(m+1,r);
+  let left=array.slice(l,m+1),right=array.slice(m+1,r+1);
+  let i=0,j=0,k=l;
+  while(i<left.length&&j<right.length){
+    let color = Array(array.length).fill("skyblue");
+    for(let x=l;x<=m;x++) color[x]="purple";
+    for(let x=m+1;x<=r;x++) color[x]="orange";
+    showArray([],color); await sleep(delay);
+    if(left[i]<=right[j]) array[k++]=left[i++];
+    else array[k++]=right[j++];
+  }
+  while(i<left.length) array[k++]=left[i++];
+  while(j<right.length) array[k++]=right[j++];
+  showArray();
+}
+
+async function quickSort(low=0,high=array.length-1){
+  if(low<high){
+    let pi=await partition(low,high);
+    await quickSort(low,pi-1);
+    await quickSort(pi+1,high);
+  }
+  showArray();
+}
+
+async function partition(low,high){
+  let pivot=array[high];
+  let i=low;
+  for(let j=low;j<high;j++){
+    let color = Array(array.length).fill("skyblue");
+    color[high]="red"; color[j]="orange"; color[i]="limegreen";
+    showArray([],color); await sleep(delay);
+    if(array[j]<pivot){ [array[i],array[j]]=[array[j],array[i]]; i++; }
+  }
+  [array[i],array[high]]=[array[high],array[i]];
+  return i;
+}
+
+async function startSort(){
+  const algo=document.getElementById("algo").value;
+  if(algo==="bubble") await bubbleSort();
+  else if(algo==="selection") await selectionSort();
+  else if(algo==="insertion") await insertionSort();
+  else if(algo==="merge") await mergeSort();
+  else if(algo==="quick") await quickSort();
+}
+
+// Pseudocode display
+const pseudocodes = {
+  bubble:`for(i=0;i<n-1;i++)
+  for(j=0;j<n-i-1;j++)
+    if(arr[j]>arr[j+1])
+       swap(arr[j], arr[j+1]);`,
+
+  selection:`for(i=0;i<n-1;i++){
+  min=i;
+  for(j=i+1;j<n;j++)
+    if(arr[j]<arr[min])
+       min=j;
+  swap(arr[i], arr[min]);
+}`,
+
+  insertion:`for(i=1;i<n;i++){
+  key=arr[i];
+  j=i-1;
+  while(j>=0 && arr[j]>key){
+    arr[j+1]=arr[j];
+    j--;
+  }
+  arr[j+1]=key;
+}`,
+
+  merge:`mergeSort(l, r):
+  if(l<r){
+    m=(l+r)/2;
+    mergeSort(l,m);
+    mergeSort(m+1,r);
+    merge(l,m,r);
+  }`,
+
+  quick:`quickSort(low,high):
+  if(low<high){
+    pi=partition(low,high);
+    quickSort(low,pi-1);
+    quickSort(pi+1,high);
+  }`
+};
+
+function showPseudocode(){
+  const algo=document.getElementById("algo").value;
+  document.getElementById("pseudocode").innerText = pseudocodes[algo];
+}
+
+generateArray();
+showPseudocode();
+</script>
+
+</body>
+</html>
